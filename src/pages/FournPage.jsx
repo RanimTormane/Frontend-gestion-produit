@@ -1,28 +1,21 @@
 // AdminLayout.jsx
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import Footer from "../components/Footer";
 import NavBar from "../components/NavBar";
+import Footer from "../components/Footer";
 
 export default function AdminDashboard() {
-  const user = { role: "admin" };
-
+  const user = { role: "fournisseur" };
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Top Navbar */}
+    <div>
       <NavBar user={user} />
-
-      <div className="flex flex-1">
-        {/* Sidebar */}
+      <div className="flex">
         <Sidebar role={user.role} />
 
-        {/* Main content */}
-        <main className="flex-1 bg-gray-50 p-6 overflow-y-auto">
+        <main className="flex-1 bg-gray-50 p-6">
           <Outlet /> {/* Nested route content goes here */}
         </main>
       </div>
-
-      {/* Footer */}
       <Footer />
     </div>
   );
