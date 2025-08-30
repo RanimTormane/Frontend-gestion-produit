@@ -38,8 +38,11 @@ export default function Login() {
       setMessage({ type: "success", text: "Connexion réussie !" });
 
       // Store token if needed
+      // Après
       localStorage.setItem("token", token);
+      localStorage.setItem("clientId", user._id); // 🔹 essentiel pour Card.jsx
       localStorage.setItem("userRole", user.role);
+      localStorage.setItem("userName", user.nom);
 
       // Role-based navigation
       if (user.role === "admin") {
@@ -47,7 +50,7 @@ export default function Login() {
       } else if (user.role === "client") {
         navigate("/");
       } else if (user.role === "fournisseur") {
-        navigate("/fournisseur/home");
+        navigate("/fournisseur");
       } else {
         navigate("/"); // fallback route
       }

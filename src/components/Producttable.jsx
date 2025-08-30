@@ -1,63 +1,69 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function Usertable() {
-  const [users, setUsers] = useState([]);
+export default function ProductTable() {
+  const [products, setProducts] = useState([]);
   const [isOpen, setIsOpen] = useState(false); // modal ajout
   const [isEditOpen, setIsEditOpen] = useState(false); // modal édition
-  const [currentId, setCurrentId] = useState(null); // id du user à modifier
+  const [currentId, setCurrentId] = useState(null);
+
   // 🔹 Pagination
   const [page, setPage] = useState(1);
-  const [limit] = useState(5); // tu peux changer la taille des pages
+  const [limit] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
+
   const [message, setMessage] = useState("");
+
   const [formData, setFormData] = useState({
     nom: "",
-    prenom: "",
-    email: "",
-    mdp: "",
-    adresse: "",
-    statut: "",
-    role: "",
+    description: "",
+    prix: "",
+    quantiteStock: "",
+    typeProduit: "",
+    statutProduit: "",
+    idcategorie: "",
+    idfournisseur: "",
+    imageURL: null, // ⚡ fichier image
   });
 
   useEffect(() => {
-    fetchUsers(page);
+    fetchProducts(page);
   }, [page]);
 
-  const fetchUsers = (page) => {
+  const fetchProducts = (page) => {
     axios
-
-      .get(`http://localhost:5000/api/users/users?page=${page}&limit=${limit}`)
+      .get(
+        `http://localhost:5000/api/products/products?page=${page}&limit=${limit}`
+      )
       .then((res) => {
-        setUsers(res.data.users);
+        setProducts(res.data.products);
         setTotalPages(res.data.totalPages);
       })
       .catch((err) => console.error(err));
   };
 
-  const handleEdit = (user) => {
-    setCurrentId(user._id);
+  const handleEdit = (product) => {
+    setCurrentId(product._id);
     setFormData({
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      mdp: "", // 🔹 tu peux laisser vide pour ne pas réécrire le mot de passe
-      adresse: user.adresse,
-      statut: user.statut,
-      role: user.role,
+      nom: product.nom,
+      description: product.description,
+      prix: product.prix,
+      quantiteStock: product.quantiteStock,
+      typeProduit: product.typeProduit,
+      statutProduit: product.statutProduit,
+      idcategorie: product.idcategorie,
+      idfournisseur: product.idfournisseur,
+      imageURL: null, // ⚡ on ne recharge pas le fichier directement
     });
     setIsEditOpen(true);
   };
 
   const handleDelete = (id) => {
-    if (
-      window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")
-    ) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
       axios
-        .delete(`http://localhost:5000/api/users/delete/${id}`)
+        .delete(`http://localhost:5000/api/products/delete/${id}`)
         .then(() => {
-          setUsers(users.filter((u) => u._id !== id));
+          setProducts(products.filter((p) => p._id !== id));
         })
         .catch((err) => console.error(err));
     }
@@ -66,55 +72,52 @@ export default function Usertable() {
   const handleCreate = () => {
     setFormData({
       nom: "",
-      prenom: "",
-      email: "",
-      mdp: "",
-      adresse: "",
-      statut: "",
-      role: "",
+      description: "",
+      prix: "",
+      quantiteStock: "",
+      typeProduit: "",
+      statutProduit: "",
+      idcategorie: "",
+      idfournisseur: "",
+      imageURL: null,
     });
     setIsOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
+      const dataToSend = new FormData();
+      for (let key in formData) {
+        if (formData[key] !== null) {
+          dataToSend.append(key, formData[key]);
+        }
+      }
+
       if (isEditOpen) {
-        // 🔹 UPDATE
-        const res = await fetch(
-          `http://localhost:5000/api/users/update/${currentId}`,
+        // UPDATE
+        await axios.put(
+          `http://localhost:5000/api/products/update/${currentId}`,
+          dataToSend,
           {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
+            headers: { "Content-Type": "multipart/form-data" },
           }
         );
-
-        const data = await res.json();
-        if (res.ok) {
-          setMessage("Utilisateur modifié avec succès !");
-          fetchUsers();
-          setIsEditOpen(false);
-        } else {
-          setMessage(data.message || "Erreur lors de la modification");
-        }
+        setMessage("Produit modifié avec succès !");
+        fetchProducts(page);
+        setIsEditOpen(false);
       } else {
-        // 🔹 CREATE
-        const res = await fetch("http://localhost:5000/api/users/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          setMessage("Utilisateur ajouté avec succès !");
-          fetchUsers();
-          setIsOpen(false);
-        } else {
-          setMessage(data.message || "Erreur lors de l'ajout");
-        }
+        // CREATE
+        await axios.post(
+          "http://localhost:5000/api/products/create",
+          dataToSend,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+        setMessage("Produit ajouté avec succès !");
+        fetchProducts(page);
+        setIsOpen(false);
       }
     } catch (error) {
       setMessage("Erreur serveur : " + error.message);
@@ -122,20 +125,25 @@ export default function Usertable() {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, files } = e.target;
+    if (name === "imageURL") {
+      setFormData({ ...formData, imageURL: files[0] });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">👥 Liste des Utilisateurs</h1>
+      <h1 className="text-2xl font-bold mb-6">📦 Liste des Produits</h1>
 
-      {/* Bouton en haut à droite */}
+      {/* Bouton Ajouter */}
       <div className="flex justify-end mb-4">
         <button
           onClick={handleCreate}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md"
         >
-          + Ajouter un utilisateur
+          + Ajouter un produit
         </button>
       </div>
 
@@ -145,42 +153,56 @@ export default function Usertable() {
           <thead>
             <tr className="bg-gray-100 text-gray-700">
               <th className="p-3">Nom</th>
-              <th className="p-3">Prénom</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Rôle</th>
+              <th className="p-3">Description</th>
+              <th className="p-3">Prix</th>
+              <th className="p-3">Quantité</th>
+              <th className="p-3">Type</th>
               <th className="p-3">Statut</th>
+              <th className="p-3">Image</th>
               <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.length > 0 ? (
-              users.map((user) => (
+            {products.length > 0 ? (
+              products.map((product) => (
                 <tr
-                  key={user._id}
+                  key={product._id}
                   className="hover:bg-gray-50 transition duration-200"
                 >
-                  <td className="p-3 border-t">{user.nom}</td>
-                  <td className="p-3 border-t">{user.prenom}</td>
-                  <td className="p-3 border-t">{user.email}</td>
-                  <td className="p-3 border-t">{user.role}</td>
+                  <td className="p-3 border-t">{product.nom}</td>
+                  <td className="p-3 border-t">{product.description}</td>
+                  <td className="p-3 border-t">{product.prix} DT</td>
+                  <td className="p-3 border-t">{product.quantiteStock}</td>
+                  <td className="p-3 border-t">{product.typeProduit}</td>
                   <td
                     className={`p-3 border-t font-medium ${
-                      user.statut === "Actif"
+                      product.statutProduit === "disponible"
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
                   >
-                    {user.statut}
+                    {product.statutProduit}
+                  </td>
+                  <td className="p-3 border-t">
+                    {product.imageURL ? (
+                      <img
+                        src={product.imageURL}
+                        alt={product.nom}
+                        className="h-12 w-12 object-cover rounded"
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="p-3 border-t text-center space-x-2">
                     <button
-                      onClick={() => handleEdit(user)}
+                      onClick={() => handleEdit(product)}
                       className="px-3 py-1 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600 transition"
                     >
                       ✏️
                     </button>
                     <button
-                      onClick={() => handleDelete(user._id)}
+                      onClick={() => handleDelete(product._id)}
                       className="px-3 py-1 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600 transition"
                     >
                       🗑️
@@ -191,17 +213,18 @@ export default function Usertable() {
             ) : (
               <tr>
                 <td
-                  colSpan="6"
+                  colSpan="8"
                   className="p-4 text-center text-gray-500 italic"
                 >
-                  Aucun utilisateur trouvé
+                  Aucun produit trouvé
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      {/* 🔹 Pagination */}
+
+      {/* Pagination */}
       <div className="flex justify-center mt-4 space-x-2">
         <button
           disabled={page === 1}
@@ -222,14 +245,12 @@ export default function Usertable() {
         </button>
       </div>
 
-      {/* 🔹 Modal (ajout & édition utilisent le même formulaire) */}
+      {/* Modal (ajout & édition) */}
       {(isOpen || isEditOpen) && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-xl font-bold mb-4">
-              {isEditOpen
-                ? "Modifier un utilisateur"
-                : "Ajouter un utilisateur"}
+              {isEditOpen ? "Modifier un produit" : "Ajouter un produit"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
@@ -241,64 +262,75 @@ export default function Usertable() {
                 className="w-full p-2 border rounded"
                 required
               />
+              <textarea
+                name="description"
+                placeholder="Description"
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              />
+              <input
+                type="number"
+                name="prix"
+                placeholder="Prix"
+                value={formData.prix}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              />
+              <input
+                type="number"
+                name="quantiteStock"
+                placeholder="Quantité en stock"
+                value={formData.quantiteStock}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              />
               <input
                 type="text"
-                name="prenom"
-                placeholder="Prénom"
-                value={formData.prenom}
+                name="typeProduit"
+                placeholder="Type de produit"
+                value={formData.typeProduit}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                type="text"
+                name="statutProduit"
+                placeholder="Statut (ex: disponible / rupture)"
+                value={formData.statutProduit}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
-                type="password"
-                name="mdp"
-                placeholder="Mot de passe"
-                value={formData.mdp}
+                type="text"
+                name="idcategorie"
+                placeholder="ID Catégorie"
+                value={formData.idcategorie}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
               />
               <input
                 type="text"
-                name="adresse"
-                placeholder="Adresse"
-                value={formData.adresse}
+                name="idfournisseur"
+                placeholder="ID Fournisseur"
+                value={formData.idfournisseur}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
               />
-              <select
-                name="statut"
-                value={formData.statut}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              >
-                <option value="">-- Statut --</option>
-                <option value="actif">actif</option>
-                <option value="inactif">inactif</option>
-              </select>
 
-              <select
-                name="role"
-                value={formData.role}
+              {/* ⚡ Champ fichier image */}
+              <input
+                type="file"
+                name="imageURL"
+                accept="image/*"
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
-                required
-              >
-                <option value="">-- Rôle --</option>
-                <option value="admin">Admin</option>
-                <option value="client">Client</option>
-                <option value="fournisseur">Fournisseur</option>
-              </select>
+              />
 
               <div className="flex justify-between">
                 <button

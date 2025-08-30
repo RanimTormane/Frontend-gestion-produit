@@ -7,11 +7,17 @@ import AdminUserPage from "./pages/AdminUserPage";
 import AdminLivraisonPage from "./pages/AdminLivraisonPage";
 import AdminCategoriePage from "./pages/AdminCategoriePage";
 import AdminCommandePage from "./pages/AdminComandePage";
+import ProductDetail from "./pages/Productdetails";
+import FournPage from "./pages/FournPage";
+import FournProductPage from "./pages/FournProductPage";
+import AccountPage from "./pages/AccountPage";
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -21,6 +27,10 @@ export default function App() {
           <Route path="categorie" element={<AdminCategoriePage />} />
           <Route path="commande" element={<AdminCommandePage />} />
         </Route>
+        <Route path="/fournisseur" element={<FournPage />}>
+          <Route path="manageproducts" element={<FournProductPage />} />
+        </Route>
+        <Route path="/account" element={<AccountPage />} />
       </Routes>
     </BrowserRouter>
   );
